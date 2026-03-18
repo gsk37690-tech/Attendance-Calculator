@@ -62,7 +62,7 @@ npm run dev
 
 ## UI States
 
-- Normal: default dark card layout
+- Normal: default white card layout
 - Recoverable warning: pulsing red border for risk state
 - Critical: flashing detention banner + red screen alert overlay
 - Safe/Excellent: subtle green glow when attendance is very strong
