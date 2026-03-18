@@ -1,120 +1,101 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useEffect, useMemo, useState } from 'react'
+import Header from './components/Header'
+import InputPanel from './components/InputPanel'
+import ResultsDashboard from './components/ResultsDashboard'
+import WarningBanner from './components/WarningBanner'
+import WhatIfCalculator from './components/WhatIfCalculator'
+import { getSubjectNames, useAttendanceCalc } from './hooks/useAttendanceCalc'
 import './App.css'
 
+const getTodayDateInput = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function App() {
-  const [count, setCount] = useState(0)
+  const subjects = useMemo(() => getSubjectNames(), [])
+
+  const [form, setForm] = useState({
+    subject: subjects[0] ?? 'Workshop',
+    today: getTodayDateInput(),
+    currentAttendancePct: '76',
+    currentTotalClasses: '',
+  })
+
+  const [plannedSkips, setPlannedSkips] = useState(0)
+  const [manuallyEditedTotal, setManuallyEditedTotal] = useState(false)
+
+  const calc = useAttendanceCalc({
+    subject: form.subject,
+    today: form.today,
+    currentAttendancePct: Number(form.currentAttendancePct),
+    currentTotalClasses: Number(form.currentTotalClasses),
+    plannedSkips,
+  })
+
+  useEffect(() => {
+    if (manuallyEditedTotal) {
+      return
+    }
+
+    const recommended = String(calc.classesHeldBySchedule)
+    setForm((prev) =>
+      prev.currentTotalClasses === recommended
+        ? prev
+        : {
+            ...prev,
+            currentTotalClasses: recommended,
+          },
+    )
+  }, [calc.classesHeldBySchedule, manuallyEditedTotal])
+
+  useEffect(() => {
+    if (plannedSkips > calc.maxSkips) {
+      setPlannedSkips(calc.maxSkips)
+    }
+  }, [plannedSkips, calc.maxSkips])
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+
+    if (name === 'currentTotalClasses') {
+      setManuallyEditedTotal(true)
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div
+      className={`app-shell ${calc.status.excellent ? 'state-excellent' : ''} ${
+        calc.status.recoverableWarning ? 'state-warning' : ''
+      } ${calc.status.critical ? 'state-critical' : ''}`}
+    >
+      <WarningBanner show={calc.status.critical} />
 
-      <div className="ticks"></div>
+      <Header semesterStart={calc.semesterStart} semesterEnd={calc.semesterEnd} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <ResultsDashboard calc={calc} />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <InputPanel
+        subjects={subjects}
+        form={form}
+        onChange={handleChange}
+        classesHeldBySchedule={calc.classesHeldBySchedule}
+      />
+
+      <WhatIfCalculator
+        plannedSkips={calc.boundedPlannedSkips}
+        maxSkips={calc.maxSkips}
+        onSkipChange={setPlannedSkips}
+      />
+    </div>
   )
 }
 

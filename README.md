@@ -1,16 +1,68 @@
-# React + Vite
+# The Detention Saver
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A single-page React application that helps college students track attendance risk and avoid detention by calculating:
 
-Currently, two official plugins are available:
+- Remaining classes in the semester for a selected subject
+- How many classes must be attended to reach 75% and 90%
+- Safe bunk buffer before dropping below 75%
+- What-if projections based on planned future skips
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tech Stack
 
-## React Compiler
+- React (functional components + hooks)
+- Vite
+- Plain CSS
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Project Structure
 
-## Expanding the ESLint configuration
+```text
+src/
+	components/
+		Header.jsx
+		InputPanel.jsx
+		MetricCard.jsx
+		ResultsDashboard.jsx
+		WarningBanner.jsx
+		WhatIfCalculator.jsx
+	hooks/
+		useAttendanceCalc.js
+	App.jsx
+	App.css
+	index.css
+	main.jsx
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Run Locally
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Start dev server:
+
+```bash
+npm run dev
+```
+
+3. Open the local URL printed by Vite.
+
+## Attendance Logic Notes
+
+- Hardcoded semester range:
+	- Start: `2026-01-05`
+	- End: `2026-04-30`
+- Weekend rule is strict:
+	- Sunday = 0
+	- Saturday = 6
+	- Both skipped while counting schedule classes
+- Timetable is hardcoded per subject by weekday
+- All calculations are reactive and memoized in `useAttendanceCalc`
+
+## UI States
+
+- Normal: default dark card layout
+- Recoverable warning: pulsing red border for risk state
+- Critical: flashing detention banner + red screen alert overlay
+- Safe/Excellent: subtle green glow when attendance is very strong
