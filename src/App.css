@@ -230,7 +230,7 @@ input[type='range'] {
 }
 
 .critical-banner {
-  position: sticky;
+  position: relative;
   top: 0.6rem;
   z-index: 9;
   text-align: center;
